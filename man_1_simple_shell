@@ -1,0 +1,10 @@
+.TH SIMPLE_SHELL 1 "December 2025" "Holberton School" "User Commands"
+.SH NAME
+simple_shell \- a simple UNIX command interpreter
+.SH SYNOPSIS
+./hsh
+.SH DESCRIPTION
+simple_shell is a basic command interpreter that executes commands
+read from standard input.
+.SH AUTHOR
+Solaf Abdulaziz Alessa, Hanin Taqi Al Sayed Hassan
