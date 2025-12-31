@@ -4,14 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 #include <string.h>
-#include <errno.h>
 
-/* Functions */
-void print_prompt(void);
+/* Function prototypes */
 char *read_line(void);
-void execute_command(char *line);
+char *trim_whitespace(char *str);
+void execute(char *line);
+
+extern char **environ;
 
 #endif /* SHELL_H */

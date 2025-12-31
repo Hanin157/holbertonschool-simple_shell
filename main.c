@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "shell.h"
 
 /**
 	* main - simple shell loop
