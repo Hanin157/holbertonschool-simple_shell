@@ -1,36 +1,62 @@
 #include "shell.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/wait.h>
 
-/**
- * main - simple shell loop
- * Return: 0 on success
- */
+#define BUFFER_SIZE 1024
+
 int main(void)
 {
-    char *line;
+    char *line = NULL;
+    size_t bufsize = 0;
+    ssize_t nread;
+    pid_t pid;
+    int status;
 
     while (1)
     {
-        if (isatty(STDIN_FILENO))
-            printf("#cisfun$ ");
+        printf("#cisfun$ ");
+        fflush(stdout);
 
-        line = read_line();
-        if (!line) /* EOF */
+        nread = getline(&line, &bufsize, stdin);
+        if (nread == -1)  /* Handle Ctrl+D */
         {
             printf("\n");
             break;
         }
 
-        line = trim_whitespace(line);
+        if (line[nread - 1] == '\n')
+            line[nread - 1] = '\0';
+
         if (line[0] == '\0')
+            continue;
+
+        pid = fork();
+        if (pid == -1)
         {
-            free(line);
+            perror("fork");
             continue;
         }
 
-        execute_command(line);
-        free(line);
+        if (pid == 0)  /* Child */
+        {
+            char *args[] = {line, NULL};
+
+            if (execve(line, args, NULL) == -1)
+            {
+                perror("./shell");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else  /* Parent */
+        {
+            waitpid(pid, &status, 0);
+        }
     }
 
+    free(line);
     return 0;
 }
 
