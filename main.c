@@ -1,37 +1,38 @@
 #include "shell.h"
 
 /**
-	* main - simple shell loop
-	* Return: 0
-	*/
+ * main - simple shell loop
+ * Return: 0 on success
+ */
 int main(void)
 {
-	char *line;
+    char *line;
 
-	while (1)
-	{
-	if (isatty(STDIN_FILENO))
-	printf("#cisfun$ ");
+    while (1)
+    {
+        if (isatty(STDIN_FILENO))
+            printf("#cisfun$ ");
 
-	line = read_line();
-	if (!line) /* EOF */
-	{
-	printf("\n");
-	break;
-	}
+        line = read_line();
+        if (!line)
+        {
+            printf("\n");
+            break;
+        }
 
-	line = trim_whitespace(line);
+        line = trim_whitespace(line);
 
-	if (line[0] == '\0')
-	{
-	free(line);
-	continue;
-	}
+        if (line[0] == '\0')
+        {
+            free(line);
+            continue;
+        }
 
-	execute(line);
-	free(line);
-	}
+        execute(line);
 
-	return 0;
+        free(line);
+    }
+
+    return 0;
 }
 
