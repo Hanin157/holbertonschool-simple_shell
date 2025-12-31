@@ -8,16 +8,19 @@
 #include <string.h>
 #include <sys/stat.h>
 
-/* helper functions */
+/* prompt */
+void print_prompt(void);
+
+/* helpers */
 int is_space(char c);
 char *read_input(void);
 char *trim_spaces_copy(char *str);
 
-/* command execution (Task 2: no PATH, no args) */
+/* PATH helpers */
+int command_exists(char *path);
+char *find_in_path(char *command);
+
+/* execution */
 int execute_command(char *line);
 
-/* prompt */
-void print_prompt(void);
-
 #endif /* SHELL_H */
-

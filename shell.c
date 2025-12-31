@@ -1,11 +1,10 @@
 #include "shell.h"
-#include <sys/types.h>
 
 extern char **environ;
 
 /**
- * is_space - checks if a char is space, tab or newline
- * @c: character to check
+ * is_space - checks for whitespace
+ * @c: char
  *
  * Return: 1 if space-like, 0 otherwise
  */
@@ -15,24 +14,23 @@ int is_space(char c)
 }
 
 /**
- * read_input - reads a line from stdin using getline
+ * read_input - reads input line using getline
  *
- * Return: allocated buffer (caller must free), or NULL on EOF/error
+ * Return: allocated string or NULL on EOF/error
  */
 char *read_input(void)
 {
 	char *line = NULL;
-	size_t bufsize = 0;
+	size_t size = 0;
 	ssize_t nread;
 
-	nread = getline(&line, &bufsize, stdin);
+	nread = getline(&line, &size, stdin);
 	if (nread == -1)
 	{
 		free(line);
 		return (NULL);
 	}
 
-	/* strip trailing newline if present */
 	if (nread > 0 && line[nread - 1] == '\n')
 		line[nread - 1] = '\0';
 
@@ -40,10 +38,10 @@ char *read_input(void)
 }
 
 /**
- * trim_spaces_copy - trims leading and trailing spaces in a new string
+ * trim_spaces_copy - remove leading & trailing spaces
  * @str: original string
  *
- * Return: newly allocated trimmed string (caller must free), or NULL if empty
+ * Return: new trimmed string or NULL if becomes empty
  */
 char *trim_spaces_copy(char *str)
 {
@@ -51,17 +49,15 @@ char *trim_spaces_copy(char *str)
 	char *trimmed;
 	int len;
 
-	if (str == NULL)
+	if (!str)
 		return (NULL);
 
-	/* skip leading spaces */
 	while (*str && is_space(*str))
 		str++;
 
 	if (*str == '\0')
 		return (NULL);
 
-	/* move end pointer to last non-space char */
 	end = str + strlen(str) - 1;
 	while (end > str && is_space(*end))
 		end--;
@@ -69,7 +65,7 @@ char *trim_spaces_copy(char *str)
 	len = (int)(end - str) + 1;
 
 	trimmed = malloc(len + 1);
-	if (trimmed == NULL)
+	if (!trimmed)
 		return (NULL);
 
 	strncpy(trimmed, str, len);
@@ -79,58 +75,207 @@ char *trim_spaces_copy(char *str)
 }
 
 /**
- * execute_command - executes a single-word command (no PATH, no args)
- * @line: input line (already trimmed)
+ * command_exists - checks if path points to an executable file
+ * @path: path to check
  *
- * Return: exit status of the command, or 1 on error
+ * Return: 1 if executable, 0 otherwise
+ */
+int command_exists(char *path)
+{
+	if (!path)
+		return (0);
+
+	if (access(path, X_OK) == 0)
+		return (1);
+
+	return (0);
+}
+
+/**
+ * get_path_value - internal helper: get PATH from environ
+ *
+ * Return: pointer to PATH value (without "PATH=") or NULL
+ */
+static char *get_path_value(void)
+{
+	int i;
+
+	for (i = 0; environ[i] != NULL; i++)
+	{
+		if (strncmp(environ[i], "PATH=", 5) == 0)
+			return (environ[i] + 5);
+	}
+	return (NULL);
+}
+
+/**
+ * find_in_path - search command in PATH directories
+ * @command: command name (no '/')
+ *
+ * Return: malloc'ed full path or NULL if not found
+ */
+char *find_in_path(char *command)
+{
+	char *path, *path_copy, *dir;
+	char *full_path;
+	size_t len_dir, len_cmd;
+
+	if (command == NULL)
+		return (NULL);
+
+	path = get_path_value();
+	if (path == NULL || *path == '\0')
+		return (NULL);
+
+	path_copy = strdup(path);
+	if (path_copy == NULL)
+		return (NULL);
+
+	len_cmd = strlen(command);
+
+	dir = strtok(path_copy, ":");
+	while (dir != NULL)
+	{
+		len_dir = strlen(dir);
+
+		full_path = malloc(len_dir + 1 + len_cmd + 1);
+		if (full_path == NULL)
+		{
+			free(path_copy);
+			return (NULL);
+		}
+
+		strcpy(full_path, dir);
+		strcat(full_path, "/");
+		strcat(full_path, command);
+
+		if (command_exists(full_path))
+		{
+			free(path_copy);
+			return (full_path);
+		}
+
+		free(full_path);
+		dir = strtok(NULL, ":");
+	}
+
+	free(path_copy);
+	return (NULL);
+}
+
+/**
+ * find_command - returns either direct path or PATH-resolved path
+ * @cmd: first argument (command name)
+ *
+ * Return: path to execute (may be same pointer as cmd) or NULL
+ */
+char *find_command(char *cmd)
+{
+	char *cmd_path;
+
+	if (cmd == NULL)
+		return (NULL);
+
+	/* case 1: command contains '/' -> treat as a path */
+	if (strchr(cmd, '/') != NULL)
+	{
+		if (command_exists(cmd))
+			return (cmd); /* use as-is, do NOT free later */
+		else
+			return (NULL);
+	}
+
+	/* case 2: plain name -> search in PATH */
+	cmd_path = find_in_path(cmd);
+	return (cmd_path); /* malloc'ed if not NULL */
+}
+
+/**
+ * execute_command - tokenizes & executes (with PATH support)
+ * @line: input line (trimmed)
+ *
+ * Return: exit status of command, 127 if not found
  */
 int execute_command(char *line)
 {
-    pid_t pid;
-    int status = 0;
-    char *args[128];
-    char *token;
-    int i = 0;
+	pid_t pid;
+	int status = 0;
+	char *args[128];
+	char *token;
+	int i = 0;
+	char *cmd_path;
+	int need_free = 0;
 
-    if (!line || !line[0])
-        return (0);
+	if (!line || !line[0])
+		return (0);
 
-    /* tokenize input into args[] */
-    token = strtok(line, " \t");
-    while (token && i < 127)
-    {
-        args[i++] = token;
-        token = strtok(NULL, " \t");
-    }
-    args[i] = NULL;
+	/* split into arguments */
+	token = strtok(line, " \t");
+	while (token && i < 127)
+	{
+		args[i++] = token;
+		token = strtok(NULL, " \t");
+	}
+	args[i] = NULL;
 
-    if (!args[0])
-        return (0);
+	if (!args[0])
+		return (0);
 
-    pid = fork();
-    if (pid == -1)
-    {
-        perror("./hsh");
-        return (1);
-    }
+	/* resolve command: either absolute/relative or via PATH */
+	cmd_path = find_command(args[0]);
+	if (cmd_path == NULL)
+	{
+		/* command doesn't exist → DO NOT fork */
+		fprintf(stderr, "./hsh: command not found: %s\n", args[0]);
+		return (127);
+	}
 
-    if (pid == 0)
-    {
-        if (execve(args[0], args, environ) == -1)
-        {
-            perror("./hsh");
-            _exit(127);
-        }
-    }
-    else
-    {
-        waitpid(pid, &status, 0);
+	/* if find_command returned a malloc'ed path (from PATH),
+	 * it'll differ from args[0]
+	 */
+	if (cmd_path != args[0])
+		need_free = 1;
 
-        if (WIFEXITED(status))
-            status = WEXITSTATUS(status);
-        else
-            status = 1;
-    }
+	pid = fork();
+	if (pid == -1)
+	{
+		perror("./hsh");
+		if (need_free)
+			free(cmd_path);
+		return (1);
+	}
 
-    return (status);
+	if (pid == 0)
+	{
+		/* child */
+		if (execve(cmd_path, args, environ) == -1)
+		{
+			perror("./hsh");
+			if (need_free)
+				free(cmd_path);
+			_exit(127);
+		}
+	}
+	else
+	{
+		/* parent */
+		if (waitpid(pid, &status, 0) == -1)
+		{
+			perror("./hsh");
+			status = 1;
+		}
+		else if (WIFEXITED(status))
+		{
+			status = WEXITSTATUS(status);
+		}
+		else
+		{
+			status = 1;
+		}
+	}
+
+	if (need_free)
+		free(cmd_path);
+
+	return (status);
 }
