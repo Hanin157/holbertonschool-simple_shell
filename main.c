@@ -1,9 +1,8 @@
 #include "shell.h"
 
 /**
-	* main - entry point for simple shell v0.1
-	*
-	* Return: Always 0
+	* main - simple shell loop
+	* Return: 0 on success, 1 on failure
 	*/
 int main(void)
 {
@@ -11,19 +10,31 @@ int main(void)
 
 	while (1)
 	{
-	/* Display prompt only in interactive mode */
+	/* Display prompt */
 	if (isatty(STDIN_FILENO))
-	write(1, "#cisfun$ ", 9);
+	printf("#cisfun$ ");
 
+	/* Read command line */
 	line = read_line();
-	if (!line) /* Ctrl+D */
+	if (!line) /* EOF (Ctrl+D) */
 	{
-	if (isatty(STDIN_FILENO))
-	write(1, "\n", 1);
+	printf("\n");
 	break;
 	}
 
-	execute_command(line);
+	/* Trim whitespace */
+	line = trim_whitespace(line);
+
+	/* Skip empty lines */
+	if (line[0] == '\0')
+	{
+	free(line);
+	continue;
+	}
+
+	/* Execute command */
+	execute(line);
+
 	free(line);
 	}
 
