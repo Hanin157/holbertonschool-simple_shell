@@ -1,12 +1,18 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-char *read_input(void);
-char *trim_spaces(char *str);
-void execute_command(char *line);
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
 
-int is_space(char c);
+/* prompt */
+void print_prompt(void);
+
+/* command execution */
 int command_exists(char *path);
 char *find_command(char *command);
+void execute_command(char *line);
 
 #endif
+
