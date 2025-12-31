@@ -1,8 +1,8 @@
 #include "shell.h"
 
 /**
- * read_line - reads a line from standard input
- * Return: pointer to the line (malloc), or NULL on EOF/error
+ * read_line - reads a line from stdin
+ * Return: pointer to line (malloc), NULL on EOF/error
  */
 char *read_line(void)
 {

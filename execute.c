@@ -3,7 +3,7 @@
 extern char **environ;
 
 /**
- * execute_command - forks and executes a single-word command
+ * execute_command - forks and executes a single command
  * @line: command to execute (full path)
  */
 void execute_command(char *line)
@@ -22,7 +22,7 @@ void execute_command(char *line)
         return;
     }
 
-    if (child_pid == 0) /* Child */
+    if (child_pid == 0) /* child */
     {
         args[0] = line;
         args[1] = NULL;
@@ -33,7 +33,7 @@ void execute_command(char *line)
             exit(EXIT_FAILURE);
         }
     }
-    else /* Parent */
+    else /* parent */
         waitpid(child_pid, &status, 0);
 }
 
