@@ -1,7 +1,7 @@
-#include "shell.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "shell.h"
 
 /**
 	* main - entry point for the simple shell
@@ -16,10 +16,7 @@ int main(void)
 	while (1)
 	{
 	if (isatty(STDIN_FILENO))
-	{
-	printf("#cisfun$ ");
-	fflush(stdout);
-	}
+	print_prompt();
 
 	line = read_input();
 	if (line == NULL)

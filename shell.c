@@ -1,14 +1,15 @@
+#include <unistd.h>    /* fork, execve */
+#include <sys/wait.h>  /* waitpid */
+#include <ctype.h>     /* isspace */
+#include <string.h>    /* strlen */
+#include <stdlib.h>    /* malloc, free */
+#include <stdio.h>     /* perror */
 #include "shell.h"
-#include <unistd.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 /**
 	* read_input - reads a line from stdin
 	*
-	* Return: pointer to the input line (must be freed by caller), or NULL on EOF
+	* Return: pointer to input line (must be freed), or NULL on EOF
 	*/
 char *read_input(void)
 {
@@ -36,10 +37,10 @@ char *read_input(void)
 }
 
 /**
-	* trim_spaces - removes leading and trailing spaces from a string
+	* trim_spaces - removes leading and trailing spaces
 	* @str: input string
 	*
-	* Return: pointer to trimmed string (modifies original), or NULL if empty
+	* Return: pointer to trimmed string, or NULL if empty
 	*/
 char *trim_spaces(char *str)
 {
