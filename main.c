@@ -1,5 +1,16 @@
-while (1)
+#include "shell.h"
+
+/**
+	* main - entry point for simple shell v0.1
+	*
+	* Return: Always 0
+	*/
+int main(void)
 {
+	char *line;
+
+	while (1)
+	{
 	/* Display prompt only in interactive mode */
 	if (isatty(STDIN_FILENO))
 	write(1, "#cisfun$ ", 9);
@@ -14,4 +25,7 @@ while (1)
 
 	execute_command(line);
 	free(line);
+	}
+
+	return (0);
 }
