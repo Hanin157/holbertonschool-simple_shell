@@ -2,7 +2,7 @@
 
 /**
 	* read_line - read a line from stdin
-	* Return: allocated string (without newline)
+	* Return: pointer to the line without newline (malloced)
 	*/
 char *read_line(void)
 {
@@ -14,7 +14,6 @@ char *read_line(void)
 	if (n == -1)
 	return NULL;
 
-	/* Remove trailing newline if present */
 	if (n > 0 && line[n - 1] == '\n')
 	line[n - 1] = '\0';
 
