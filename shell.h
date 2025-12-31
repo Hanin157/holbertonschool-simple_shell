@@ -1,16 +1,22 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-/* main.c */
-void print_prompt(void);
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <string.h>
+#include <sys/stat.h>
+
+/* helper functions */
+int is_space(char c);
 char *read_input(void);
-char *trim_spaces(char *str);
+char *trim_spaces_copy(char *str);
 void execute_command(char *line);
 
-/* shell.c */
-int is_space(char c);
+/* PATH handling */
 int command_exists(char *path);
 char *find_command(char *command);
 
-#endif /* SHELL_H */
+#endif
 

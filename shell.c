@@ -1,18 +1,12 @@
-#include <unistd.h>    /* fork, execve */
-#include <sys/wait.h>  /* waitpid */
-#include <string.h>    /* strlen, strtok, strcpy, strcat */
-#include <stdlib.h>    /* malloc, free, exit, getenv, strdup */
-#include <stdio.h>     /* perror */
-#include <sys/stat.h>  /* stat */
 #include "shell.h"
 
-/* Check if character is space, tab, or newline */
+/* checks if a character is space, tab, or newline */
 int is_space(char c)
 {
 	return (c == ' ' || c == '\t' || c == '\n');
 }
 
-/* Read a line from stdin */
+/* read a line from stdin */
 char *read_input(void)
 {
 	char *line = NULL;
@@ -23,7 +17,7 @@ char *read_input(void)
 	if (nread == -1)
 	{
 	free(line);
-	return (NULL);
+	return NULL;
 	}
 
 	if (line[nread - 1] == '\n')
@@ -32,42 +26,50 @@ char *read_input(void)
 	if (line[0] == '\0')
 	{
 	free(line);
-	return (NULL);
+	return NULL;
 	}
 
-	return (line);
+	return line;
 }
 
-/* Trim leading/trailing spaces */
-char *trim_spaces(char *str)
+/* trim leading/trailing spaces and return a new allocated string */
+char *trim_spaces_copy(char *str)
 {
 	char *end;
+	char *trimmed;
 
 	if (!str)
-	return (NULL);
+	return NULL;
 
 	while (is_space(*str))
 	str++;
 
 	if (*str == 0)
-	return (NULL);
+	return NULL;
 
 	end = str + strlen(str) - 1;
 	while (end > str && is_space(*end))
 	end--;
 
-	*(end + 1) = '\0';
-	return str;
+	int len = end - str + 1;
+	trimmed = malloc(len + 1);
+	if (!trimmed)
+	return NULL;
+
+	strncpy(trimmed, str, len);
+	trimmed[len] = '\0';
+
+	return trimmed;
 }
 
-/* Check if a command exists at path */
+/* check if command exists */
 int command_exists(char *path)
 {
 	struct stat st;
 	return (stat(path, &st) == 0);
 }
 
-/* Find full path of command using PATH */
+/* find command in PATH */
 char *find_command(char *command)
 {
 	char *path, *path_copy, *dir;
@@ -75,11 +77,11 @@ char *find_command(char *command)
 	int len;
 
 	if (command_exists(command))
-	return strdup(command);  /* Return a copy */
+	return strdup(command);  /* always return new memory */
 
 	path = getenv("PATH");
 	if (!path)
-	return (NULL);
+	return NULL;
 
 	path_copy = strdup(path);
 	dir = strtok(path_copy, ":");
@@ -91,7 +93,7 @@ char *find_command(char *command)
 	if (!full_path)
 	{
 	free(path_copy);
-	return (NULL);
+	return NULL;
 	}
 
 	strcpy(full_path, dir);
@@ -109,34 +111,40 @@ char *find_command(char *command)
 	}
 
 	free(path_copy);
-	return (NULL);
+	return NULL;
 }
 
-/* Fork and execute a command with arguments */
+/* execute command with arguments */
 void execute_command(char *line)
 {
 	pid_t pid;
 	int status;
-	char *args[64];  /* Support multiple arguments */
-	char *token;
+	char *args[128];
 	int i = 0;
-	char *cmd_path;
+	char *token;
+	char *line_copy;
 
-	/* Split line into args */
-	token = strtok(line, " ");
-	while (token && i < 63)
+	if (!line)
+	return;
+
+	line_copy = strdup(line); /* strtok_r modifies string */
+	if (!line_copy)
+	return;
+
+	token = strtok(line_copy, " \t");
+	while (token && i < 127)
 	{
 	args[i++] = token;
-	token = strtok(NULL, " ");
+	token = strtok(NULL, " \t");
 	}
 	args[i] = NULL;
 
-	/* Find full path of command */
-	cmd_path = find_command(args[0]);
+	/* check command exists */
+	char *cmd_path = find_command(args[0]);
 	if (!cmd_path)
 	{
-	write(2, args[0], strlen(args[0]));
-	write(2, ": command not found\n", 20);
+	fprintf(stderr, "./shell: command not found: %s\n", args[0]);
+	free(line_copy);
 	return;
 	}
 
@@ -144,23 +152,25 @@ void execute_command(char *line)
 	if (pid == -1)
 	{
 	perror("fork");
+	free(line_copy);
 	free(cmd_path);
 	return;
 	}
 
-	if (pid == 0)  /* Child */
+	if (pid == 0)
 	{
 	if (execve(cmd_path, args, NULL) == -1)
 	{
-	perror("execve");
-	free(cmd_path);
+	perror("./shell");
 	exit(EXIT_FAILURE);
 	}
 	}
-	else  /* Parent */
+	else
 	{
 	waitpid(pid, &status, 0);
-	free(cmd_path);
 	}
+
+	free(cmd_path);
+	free(line_copy);
 }
 

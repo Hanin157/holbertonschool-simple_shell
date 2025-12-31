@@ -1,30 +1,29 @@
-#include <stdlib.h>
-#include <unistd.h>    /* isatty */
 #include "shell.h"
 
 int main(void)
 {
-	char *line;
-	char *trimmed_line;
+    char *line;
+    char *trimmed_line;
 
-	while (1)
-	{
-	/* Print prompt only if input is from terminal */
-	if (isatty(STDIN_FILENO))
-	print_prompt();
+    while (1)
+    {
+        printf(":) ");
+        fflush(stdout);
 
-	line = read_input();
-	if (!line)
-	break;
+        line = read_input();
+        if (!line)
+            continue;
 
-	trimmed_line = trim_spaces(line);
-	free(line);
-	if (!trimmed_line)
-	continue;
+        trimmed_line = trim_spaces_copy(line);
+        free(line);  /* safe now */
 
-	execute_command(trimmed_line);
-	}
+        if (!trimmed_line)
+            continue;
 
-	return (0);
+        execute_command(trimmed_line);
+        free(trimmed_line);
+    }
+
+    return 0;
 }
 
