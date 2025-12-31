@@ -74,16 +74,27 @@ char *trim_spaces(char *str)
 	*(end + 1) = '\0';
 	return str;
 }
-
 /**
-	* execute_command - forks and executes a single command
-	* @line: command to execute
+	* execute_command - forks and executes a command with arguments
+	* @line: command line
 	*/
 void execute_command(char *line)
 {
 	pid_t pid;
 	int status;
-	char *args[2];
+	char *args[64];
+	int i = 0;
+
+	/* split line into arguments */
+	args[i] = strtok(line, " \t");
+	while (args[i] != NULL && i < 63)
+	{
+	i++;
+	args[i] = strtok(NULL, " \t");
+	}
+
+	if (args[0] == NULL)
+	return;
 
 	pid = fork();
 	if (pid == -1)
@@ -94,10 +105,7 @@ void execute_command(char *line)
 
 	if (pid == 0)
 	{
-	args[0] = line;
-	args[1] = NULL;
-
-	if (execve(line, args, NULL) == -1)
+	if (execve(args[0], args, NULL) == -1)
 	{
 	perror("./shell");
 	exit(EXIT_FAILURE);
