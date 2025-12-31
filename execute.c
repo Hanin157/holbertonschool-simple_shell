@@ -6,7 +6,7 @@ extern char **environ;
 	* execute_command - forks and executes a single-word command
 	* @line: command to execute (full path)
 	*/
-void execute_command(char *line)
+void execute(char *line)
 {
 	pid_t child_pid;
 	int status;
