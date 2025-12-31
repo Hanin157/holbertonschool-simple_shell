@@ -9,6 +9,9 @@
 #include <string.h>
 #include <errno.h>
 
-int main(int argc, char **argv);
+/* Functions */
+void print_prompt(void);
+char *read_line(void);
+void execute_command(char *line);
 
 #endif /* SHELL_H */
