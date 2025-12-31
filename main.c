@@ -1,62 +1,92 @@
 #include "shell.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/wait.h>
 
-#define BUFFER_SIZE 1024
+/**
+	* read_input - reads a line from stdin
+	*
+	* Return: pointer to the input line (must be freed by caller)
+	*/
+char *read_input(void)
+{
+	char *line = NULL;
+	size_t bufsize = 0;
+	ssize_t nread;
 
+	nread = getline(&line, &bufsize, stdin);
+	if (nread == -1)
+	{
+	printf("\n");
+	free(line);
+	return (NULL);
+	}
+
+	if (line[nread - 1] == '\n')
+	line[nread - 1] = '\0';
+
+	if (line[0] == '\0')
+	{
+	free(line);
+	return (NULL);
+	}
+
+	return (line);
+}
+
+/**
+	* execute_command - forks and executes a single command
+	* @line: command to execute
+	*/
+void execute_command(char *line)
+{
+	pid_t pid;
+	int status;
+	char *args[2];
+
+	pid = fork();
+	if (pid == -1)
+	{
+	perror("fork");
+	return;
+	}
+
+	if (pid == 0)
+	{
+	args[0] = line;
+	args[1] = NULL;
+
+	if (execve(line, args, NULL) == -1)
+	{
+	perror("./shell");
+	exit(EXIT_FAILURE);
+	}
+	}
+	else
+	{
+	waitpid(pid, &status, 0);
+	}
+}
+
+/**
+	* main - entry point for the simple shell
+	*
+	* Return: 0 on success
+	*/
 int main(void)
 {
-    char *line = NULL;
-    size_t bufsize = 0;
-    ssize_t nread;
-    pid_t pid;
-    int status;
+	char *line;
 
-    while (1)
-    {
-        printf("#cisfun$ ");
-        fflush(stdout);
+	while (1)
+	{
+	printf("#cisfun$ ");
+	fflush(stdout);
 
-        nread = getline(&line, &bufsize, stdin);
-        if (nread == -1)  /* Handle Ctrl+D */
-        {
-            printf("\n");
-            break;
-        }
+	line = read_input();
+	if (line == NULL)
+	break;
 
-        if (line[nread - 1] == '\n')
-            line[nread - 1] = '\0';
+	execute_command(line);
+	free(line);
+	}
 
-        if (line[0] == '\0')
-            continue;
-
-        pid = fork();
-        if (pid == -1)
-        {
-            perror("fork");
-            continue;
-        }
-
-        if (pid == 0)  /* Child */
-        {
-            char *args[] = {line, NULL};
-
-            if (execve(line, args, NULL) == -1)
-            {
-                perror("./shell");
-                exit(EXIT_FAILURE);
-            }
-        }
-        else  /* Parent */
-        {
-            waitpid(pid, &status, 0);
-        }
-    }
-
-    free(line);
-    return 0;
+	return (0);
 }
 
