@@ -1,10 +1,10 @@
-#include <unistd.h>    /* fork, execve */
+#include <unistd.h>    /* fork, execve, write */
 #include <sys/wait.h>  /* waitpid */
-#include <string.h>    /* strlen */
-#include <stdlib.h>    /* malloc, free */
+#include <sys/stat.h>  /* stat */
+#include <string.h>    /* strlen, strcpy, strcat, strtok */
+#include <stdlib.h>    /* malloc, free, NULL */
 #include <stdio.h>     /* perror */
 #include "shell.h"
-#include <sys/stat.h>
 
 /**
 	* is_space - checks if a character is a space, tab, or newline
@@ -14,9 +14,7 @@
 	*/
 int is_space(char c)
 {
-	if (c == ' ' || c == '\t' || c == '\n')
-	return (1);
-	return (0);
+	return (c == ' ' || c == '\t' || c == '\n');
 }
 
 /**
@@ -46,7 +44,7 @@ char *read_input(void)
 	return (NULL);
 	}
 
-	return (line);
+	return line;
 }
 
 /**
@@ -75,35 +73,39 @@ char *trim_spaces(char *str)
 	*(end + 1) = '\0';
 	return str;
 }
+
 /**
 	* command_exists - checks if a command exists in the filesystem
-	* @path: path to the command
+	* @path: path to command
 	*
-	* Return: 1 if command exists, 0 otherwise
+	* Return: 1 if exists, 0 otherwise
 	*/
 int command_exists(char *path)
 {
 	struct stat st;
 
 	if (stat(path, &st) == 0)
-	return (1);
-	return (0);
+	return 1;
+	return 0;
 }
 
+/**
+	* find_command - finds the full path of a command using PATH variable
+	* @command: command to search
+	*
+	* Return: full path string (must be freed) or NULL if not found
+	*/
 char *find_command(char *command)
 {
-	char *path, *path_copy, *dir;
+	char *path_env = "/bin:/usr/bin:/usr/local/bin"; /* hardcoded PATH */
+	char *path_copy, *dir;
 	char *full_path;
 	int len;
 
 	if (command_exists(command))
-	return (command);
+	return strdup(command);
 
-	path = getenv("PATH");
-	if (!path)
-	return (NULL);
-
-	path_copy = strdup(path);
+	path_copy = strdup(path_env);
 	dir = strtok(path_copy, ":");
 
 	while (dir)
@@ -111,7 +113,10 @@ char *find_command(char *command)
 	len = strlen(dir) + strlen(command) + 2;
 	full_path = malloc(len);
 	if (!full_path)
-	return (NULL);
+	{
+	free(path_copy);
+	return NULL;
+	}
 
 	strcpy(full_path, dir);
 	strcat(full_path, "/");
@@ -120,7 +125,7 @@ char *find_command(char *command)
 	if (command_exists(full_path))
 	{
 	free(path_copy);
-	return (full_path);
+	return full_path;
 	}
 
 	free(full_path);
@@ -128,57 +133,101 @@ char *find_command(char *command)
 	}
 
 	free(path_copy);
-	return (NULL);
+	return NULL;
 }
+
 /**
-	* execute_command - forks and executes a command with arguments
-	* @line: command line
+	* execute_command - forks and executes a single command
+	* @line: command line to execute
 	*/
 void execute_command(char *line)
 {
 	pid_t pid;
 	int status;
-	char *args[64];
-	char *cmd_path;
+	char *args[64]; /* support commands with arguments */
+	char *token;
 	int i = 0;
+	char *full_path;
 
-	args[i] = strtok(line, " \t");
-	while (args[i] && i < 63)
+	/* tokenize command line */
+	token = strtok(line, " ");
+	while (token && i < 63)
 	{
-	i++;
-	args[i] = strtok(NULL, " \t");
+	args[i++] = token;
+	token = strtok(NULL, " ");
 	}
+	args[i] = NULL;
 
-	if (!args[0])
-	return;
-
-	cmd_path = find_command(args[0]);
-	if (!cmd_path)
+	/* find full path of command */
+	full_path = find_command(args[0]);
+	if (!full_path)
 	{
-	perror("./shell");
-	return; /* 🚨 لا fork */
+	write(2, "./shell: command not found\n", 27);
+	return;
 	}
 
 	pid = fork();
 	if (pid == -1)
 	{
 	perror("fork");
+	free(full_path);
 	return;
 	}
 
 	if (pid == 0)
 	{
-	if (execve(cmd_path, args, NULL) == -1)
+	/* child process */
+	if (execve(full_path, args, NULL) == -1)
 	{
 	perror("./shell");
+	free(full_path);
 	exit(EXIT_FAILURE);
 	}
 	}
 	else
 	{
+	/* parent waits for child */
 	waitpid(pid, &status, 0);
 	}
 
-	if (cmd_path != args[0])
-	free(cmd_path);
+	free(full_path);
 }
+
+/**
+	* print_prompt - prints the shell prompt
+	*/
+void print_prompt(void)
+{
+	write(1, "#cisfun$ ", 9);
+}
+
+/**
+	* main - entry point for the simple shell
+	*
+	* Return: 0 on success
+	*/
+int main(void)
+{
+	char *line;
+	char *trimmed_line;
+
+	while (1)
+	{
+	if (isatty(STDIN_FILENO))
+	print_prompt();
+
+	line = read_input();
+	if (!line)
+	break;
+
+	trimmed_line = trim_spaces(line);
+	free(line);
+	if (!trimmed_line)
+	continue;
+
+	execute_command(trimmed_line);
+	}
+
+	return 0;
+}
+
