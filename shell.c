@@ -37,6 +37,7 @@ char *trim_spaces_copy(char *str)
 {
 	char *end;
 	char *trimmed;
+	int len;
 
 	if (!str)
 	return NULL;
@@ -51,7 +52,7 @@ char *trim_spaces_copy(char *str)
 	while (end > str && is_space(*end))
 	end--;
 
-	int len = end - str + 1;
+	len = end - str + 1;
 	trimmed = malloc(len + 1);
 	if (!trimmed)
 	return NULL;
@@ -123,6 +124,7 @@ void execute_command(char *line)
 	int i = 0;
 	char *token;
 	char *line_copy;
+	char *cmd_path;
 
 	if (!line)
 	return;
@@ -140,7 +142,7 @@ void execute_command(char *line)
 	args[i] = NULL;
 
 	/* check command exists */
-	char *cmd_path = find_command(args[0]);
+	cmd_path = find_command(args[0]);
 	if (!cmd_path)
 	{
 	fprintf(stderr, "./shell: command not found: %s\n", args[0]);
