@@ -1,28 +1,23 @@
 #include "shell.h"
 
 /**
-	* read_line - reads a line from stdin
-	*
-	* Return: pointer to string (must free after use)
-	*         NULL if EOF or error
+	* read_line - read a line from stdin
+	* Return: allocated string (without newline)
 	*/
 char *read_line(void)
 {
 	char *line = NULL;
-	size_t len = 0;
-	ssize_t nread;
+	size_t bufsize = 0;
+	ssize_t n;
 
-	nread = getline(&line, &len, stdin);
-	if (nread == -1) /* EOF (Ctrl+D) or error */
-	{
-		free(line);
-		return (NULL);
-	}
+	n = getline(&line, &bufsize, stdin);
+	if (n == -1)
+	return NULL;
 
-	/* Remove newline character */
-	if (line[nread - 1] == '\n')
-		line[nread - 1] = '\0';
+	/* Remove trailing newline if present */
+	if (n > 0 && line[n - 1] == '\n')
+	line[n - 1] = '\0';
 
-	return (line);
+	return line;
 }
 
