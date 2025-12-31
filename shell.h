@@ -12,11 +12,12 @@
 int is_space(char c);
 char *read_input(void);
 char *trim_spaces_copy(char *str);
-void execute_command(char *line);
 
-/* PATH handling */
-int command_exists(char *path);
-char *find_command(char *command);
+/* command execution (Task 2: no PATH, no args) */
+int execute_command(char *line);
 
-#endif
+/* prompt */
+void print_prompt(void);
+
+#endif /* SHELL_H */
 

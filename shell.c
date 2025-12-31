@@ -1,12 +1,24 @@
 #include "shell.h"
+#include <sys/types.h>
 
-/* checks if a character is space, tab, or newline */
+extern char **environ;
+
+/**
+ * is_space - checks if a char is space, tab or newline
+ * @c: character to check
+ *
+ * Return: 1 if space-like, 0 otherwise
+ */
 int is_space(char c)
 {
 	return (c == ' ' || c == '\t' || c == '\n');
 }
 
-/* read a line from stdin */
+/**
+ * read_input - reads a line from stdin using getline
+ *
+ * Return: allocated buffer (caller must free), or NULL on EOF/error
+ */
 char *read_input(void)
 {
 	char *line = NULL;
@@ -16,163 +28,111 @@ char *read_input(void)
 	nread = getline(&line, &bufsize, stdin);
 	if (nread == -1)
 	{
-	free(line);
-	return NULL;
+		free(line);
+		return (NULL);
 	}
 
-	if (line[nread - 1] == '\n')
-	line[nread - 1] = '\0';
+	/* strip trailing newline if present */
+	if (nread > 0 && line[nread - 1] == '\n')
+		line[nread - 1] = '\0';
 
-	if (line[0] == '\0')
-	{
-	free(line);
-	return NULL;
-	}
-
-	return line;
+	return (line);
 }
 
-/* trim leading/trailing spaces and return a new allocated string */
+/**
+ * trim_spaces_copy - trims leading and trailing spaces in a new string
+ * @str: original string
+ *
+ * Return: newly allocated trimmed string (caller must free), or NULL if empty
+ */
 char *trim_spaces_copy(char *str)
 {
 	char *end;
 	char *trimmed;
 	int len;
 
-	if (!str)
-	return NULL;
+	if (str == NULL)
+		return (NULL);
 
-	while (is_space(*str))
-	str++;
+	/* skip leading spaces */
+	while (*str && is_space(*str))
+		str++;
 
-	if (*str == 0)
-	return NULL;
+	if (*str == '\0')
+		return (NULL);
 
+	/* move end pointer to last non-space char */
 	end = str + strlen(str) - 1;
 	while (end > str && is_space(*end))
-	end--;
+		end--;
 
-	len = end - str + 1;
+	len = (int)(end - str) + 1;
+
 	trimmed = malloc(len + 1);
-	if (!trimmed)
-	return NULL;
+	if (trimmed == NULL)
+		return (NULL);
 
 	strncpy(trimmed, str, len);
 	trimmed[len] = '\0';
 
-	return trimmed;
+	return (trimmed);
 }
 
-/* check if command exists */
-int command_exists(char *path)
-{
-	struct stat st;
-	return (stat(path, &st) == 0);
-}
-
-/* find command in PATH */
-char *find_command(char *command)
-{
-	char *path, *path_copy, *dir;
-	char *full_path;
-	int len;
-
-	if (command_exists(command))
-	return strdup(command);  /* always return new memory */
-
-	path = getenv("PATH");
-	if (!path)
-	return NULL;
-
-	path_copy = strdup(path);
-	dir = strtok(path_copy, ":");
-
-	while (dir)
-	{
-	len = strlen(dir) + strlen(command) + 2;
-	full_path = malloc(len);
-	if (!full_path)
-	{
-	free(path_copy);
-	return NULL;
-	}
-
-	strcpy(full_path, dir);
-	strcat(full_path, "/");
-	strcat(full_path, command);
-
-	if (command_exists(full_path))
-	{
-	free(path_copy);
-	return full_path;
-	}
-
-	free(full_path);
-	dir = strtok(NULL, ":");
-	}
-
-	free(path_copy);
-	return NULL;
-}
-
-/* execute command with arguments */
-void execute_command(char *line)
+/**
+ * execute_command - executes a single-word command (no PATH, no args)
+ * @line: input line (already trimmed)
+ *
+ * Return: exit status of the command, or 1 on error
+ */
+int execute_command(char *line)
 {
 	pid_t pid;
-	int status;
-	char *args[128];
-	int i = 0;
-	char *token;
-	char *line_copy;
-	char *cmd_path;
+	int status = 0;
+	char *cmd;
+	char *args[2];
 
-	if (!line)
-	return;
+	if (line == NULL || line[0] == '\0')
+		return (0);
 
-	line_copy = strdup(line); /* strtok_r modifies string */
-	if (!line_copy)
-	return;
+	/* Task 2: command lines are made only of one word
+	 * we still tolerate extra spaces but ignore anything beyond first word
+	 */
+	cmd = strtok(line, " \t");
+	if (cmd == NULL)
+		return (0);
 
-	token = strtok(line_copy, " \t");
-	while (token && i < 127)
-	{
-	args[i++] = token;
-	token = strtok(NULL, " \t");
-	}
-	args[i] = NULL;
-
-	/* check command exists */
-	cmd_path = find_command(args[0]);
-	if (!cmd_path)
-	{
-	fprintf(stderr, "./shell: command not found: %s\n", args[0]);
-	free(line_copy);
-	return;
-	}
+	args[0] = cmd;
+	args[1] = NULL;
 
 	pid = fork();
 	if (pid == -1)
 	{
-	perror("fork");
-	free(line_copy);
-	free(cmd_path);
-	return;
+		perror("./hsh");
+		return (1);
 	}
 
 	if (pid == 0)
 	{
-	if (execve(cmd_path, args, NULL) == -1)
-	{
-	perror("./shell");
-	exit(EXIT_FAILURE);
-	}
+		/* child process: try to exec exactly what user typed */
+		if (execve(cmd, args, environ) == -1)
+		{
+			/* same style as example: ./shell: No such file or directory */
+			perror("./hsh");
+			_exit(1);
+		}
 	}
 	else
 	{
-	waitpid(pid, &status, 0);
+		if (waitpid(pid, &status, 0) == -1)
+		{
+			perror("./hsh");
+			return (1);
+		}
+		if (WIFEXITED(status))
+			status = WEXITSTATUS(status);
+		else
+			status = 1;
 	}
 
-	free(cmd_path);
-	free(line_copy);
+	return (status);
 }
-

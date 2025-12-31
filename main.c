@@ -1,36 +1,57 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "shell.h"
+#include <unistd.h> /* isatty */
 
+/**
+ * main - entry point for the simple shell
+ *
+ * Return: exit status of the last executed command
+ */
 int main(void)
 {
-	char *line;
-	char *trimmed_line;
+	char *line = NULL;
+	char *trimmed_line = NULL;
+	int interactive;
+	int last_status = 0;
+
+	/* check if stdin is a terminal (interactive mode) */
+	interactive = isatty(STDIN_FILENO);
 
 	while (1)
 	{
-	/* print prompt */
-	printf(":) ");
-	fflush(stdout);
+		/* show prompt only in interactive mode */
+		if (interactive)
+			print_prompt();
 
-	/* read input */
-	line = read_input();
-	if (!line)
-	continue; /* user pressed Enter or EOF */
+		/* read input */
+		line = read_input();
+		if (line == NULL)
+		{
+			/* EOF (Ctrl+D) or read error */
+			if (interactive)
+				printf("\n");
+			break;
+		}
 
-	/* trim spaces */
-	trimmed_line = trim_spaces_copy(line);
-	free(line); /* free the original line */
+		/* trim spaces (leading + trailing) */
+		trimmed_line = trim_spaces_copy(line);
+		free(line);
+		line = NULL;
 
-	if (!trimmed_line)
-	continue; /* empty line */
+		/* empty line after trimming -> ignore */
+		if (trimmed_line == NULL || trimmed_line[0] == '\0')
+		{
+			free(trimmed_line);
+			trimmed_line = NULL;
+			continue;
+		}
 
-	/* execute command */
-	execute_command(trimmed_line);
-	free(trimmed_line);
+		/* execute command line (Task 2: one word, no PATH) */
+		last_status = execute_command(trimmed_line);
+
+		free(trimmed_line);
+		trimmed_line = NULL;
 	}
 
-	return 0;
+	return (last_status);
 }
 
