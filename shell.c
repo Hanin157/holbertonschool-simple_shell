@@ -1,10 +1,22 @@
 #include <unistd.h>    /* fork, execve */
 #include <sys/wait.h>  /* waitpid */
-#include <ctype.h>     /* isspace */
 #include <string.h>    /* strlen */
 #include <stdlib.h>    /* malloc, free */
 #include <stdio.h>     /* perror */
 #include "shell.h"
+
+/**
+	* is_space - checks if a character is a space, tab, or newline
+	* @c: character to check
+	*
+	* Return: 1 if space/tab/newline, 0 otherwise
+	*/
+int is_space(char c)
+{
+	if (c == ' ' || c == '\t' || c == '\n')
+	return (1);
+	return (0);
+}
 
 /**
 	* read_input - reads a line from stdin
@@ -37,7 +49,7 @@ char *read_input(void)
 }
 
 /**
-	* trim_spaces - removes leading and trailing spaces
+	* trim_spaces - removes leading and trailing spaces/tabs/newlines
 	* @str: input string
 	*
 	* Return: pointer to trimmed string, or NULL if empty
@@ -49,14 +61,14 @@ char *trim_spaces(char *str)
 	if (!str)
 	return (NULL);
 
-	while (isspace((unsigned char)*str))
+	while (is_space(*str))
 	str++;
 
 	if (*str == 0)
 	return (NULL);
 
 	end = str + strlen(str) - 1;
-	while (end > str && isspace((unsigned char)*end))
+	while (end > str && is_space(*end))
 	end--;
 
 	*(end + 1) = '\0';
