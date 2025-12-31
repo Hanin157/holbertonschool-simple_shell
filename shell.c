@@ -1,27 +1,18 @@
-#include <unistd.h>    /* fork, execve, write */
+#include <unistd.h>    /* fork, execve */
 #include <sys/wait.h>  /* waitpid */
-#include <sys/stat.h>  /* stat */
-#include <string.h>    /* strlen, strcpy, strcat, strtok */
-#include <stdlib.h>    /* malloc, free, NULL */
+#include <string.h>    /* strlen, strtok, strcpy, strcat */
+#include <stdlib.h>    /* malloc, free, exit, getenv, strdup */
 #include <stdio.h>     /* perror */
+#include <sys/stat.h>  /* stat */
 #include "shell.h"
 
-/**
-	* is_space - checks if a character is a space, tab, or newline
-	* @c: character to check
-	*
-	* Return: 1 if space/tab/newline, 0 otherwise
-	*/
+/* Check if character is space, tab, or newline */
 int is_space(char c)
 {
 	return (c == ' ' || c == '\t' || c == '\n');
 }
 
-/**
-	* read_input - reads a line from stdin
-	*
-	* Return: pointer to input line (must be freed), or NULL on EOF
-	*/
+/* Read a line from stdin */
 char *read_input(void)
 {
 	char *line = NULL;
@@ -44,15 +35,10 @@ char *read_input(void)
 	return (NULL);
 	}
 
-	return line;
+	return (line);
 }
 
-/**
-	* trim_spaces - removes leading and trailing spaces/tabs/newlines
-	* @str: input string
-	*
-	* Return: pointer to trimmed string, or NULL if empty
-	*/
+/* Trim leading/trailing spaces */
 char *trim_spaces(char *str)
 {
 	char *end;
@@ -74,38 +60,28 @@ char *trim_spaces(char *str)
 	return str;
 }
 
-/**
-	* command_exists - checks if a command exists in the filesystem
-	* @path: path to command
-	*
-	* Return: 1 if exists, 0 otherwise
-	*/
+/* Check if a command exists at path */
 int command_exists(char *path)
 {
 	struct stat st;
-
-	if (stat(path, &st) == 0)
-	return 1;
-	return 0;
+	return (stat(path, &st) == 0);
 }
 
-/**
-	* find_command - finds the full path of a command using PATH variable
-	* @command: command to search
-	*
-	* Return: full path string (must be freed) or NULL if not found
-	*/
+/* Find full path of command using PATH */
 char *find_command(char *command)
 {
-	char *path_env = "/bin:/usr/bin:/usr/local/bin"; /* hardcoded PATH */
-	char *path_copy, *dir;
+	char *path, *path_copy, *dir;
 	char *full_path;
 	int len;
 
 	if (command_exists(command))
-	return strdup(command);
+	return strdup(command);  /* Return a copy */
 
-	path_copy = strdup(path_env);
+	path = getenv("PATH");
+	if (!path)
+	return (NULL);
+
+	path_copy = strdup(path);
 	dir = strtok(path_copy, ":");
 
 	while (dir)
@@ -115,7 +91,7 @@ char *find_command(char *command)
 	if (!full_path)
 	{
 	free(path_copy);
-	return NULL;
+	return (NULL);
 	}
 
 	strcpy(full_path, dir);
@@ -133,23 +109,20 @@ char *find_command(char *command)
 	}
 
 	free(path_copy);
-	return NULL;
+	return (NULL);
 }
 
-/**
-	* execute_command - forks and executes a single command
-	* @line: command line to execute
-	*/
+/* Fork and execute a command with arguments */
 void execute_command(char *line)
 {
 	pid_t pid;
 	int status;
-	char *args[64]; /* support commands with arguments */
+	char *args[64];  /* Support multiple arguments */
 	char *token;
 	int i = 0;
-	char *full_path;
+	char *cmd_path;
 
-	/* tokenize command line */
+	/* Split line into args */
 	token = strtok(line, " ");
 	while (token && i < 63)
 	{
@@ -158,11 +131,12 @@ void execute_command(char *line)
 	}
 	args[i] = NULL;
 
-	/* find full path of command */
-	full_path = find_command(args[0]);
-	if (!full_path)
+	/* Find full path of command */
+	cmd_path = find_command(args[0]);
+	if (!cmd_path)
 	{
-	write(2, "./shell: command not found\n", 27);
+	write(2, args[0], strlen(args[0]));
+	write(2, ": command not found\n", 20);
 	return;
 	}
 
@@ -170,64 +144,23 @@ void execute_command(char *line)
 	if (pid == -1)
 	{
 	perror("fork");
-	free(full_path);
+	free(cmd_path);
 	return;
 	}
 
-	if (pid == 0)
+	if (pid == 0)  /* Child */
 	{
-	/* child process */
-	if (execve(full_path, args, NULL) == -1)
+	if (execve(cmd_path, args, NULL) == -1)
 	{
-	perror("./shell");
-	free(full_path);
+	perror("execve");
+	free(cmd_path);
 	exit(EXIT_FAILURE);
 	}
 	}
-	else
+	else  /* Parent */
 	{
-	/* parent waits for child */
 	waitpid(pid, &status, 0);
+	free(cmd_path);
 	}
-
-	free(full_path);
-}
-
-/**
-	* print_prompt - prints the shell prompt
-	*/
-void print_prompt(void)
-{
-	write(1, "#cisfun$ ", 9);
-}
-
-/**
-	* main - entry point for the simple shell
-	*
-	* Return: 0 on success
-	*/
-int main(void)
-{
-	char *line;
-	char *trimmed_line;
-
-	while (1)
-	{
-	if (isatty(STDIN_FILENO))
-	print_prompt();
-
-	line = read_input();
-	if (!line)
-	break;
-
-	trimmed_line = trim_spaces(line);
-	free(line);
-	if (!trimmed_line)
-	continue;
-
-	execute_command(trimmed_line);
-	}
-
-	return 0;
 }
 

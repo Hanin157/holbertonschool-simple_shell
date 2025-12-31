@@ -1,13 +1,6 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include <unistd.h>    /* isatty */
 #include "shell.h"
 
-/**
-	* main - entry point for the simple shell
-	*
-	* Return: 0 on success
-	*/
 int main(void)
 {
 	char *line;
@@ -15,22 +8,20 @@ int main(void)
 
 	while (1)
 	{
+	/* Print prompt only if input is from terminal */
 	if (isatty(STDIN_FILENO))
 	print_prompt();
 
 	line = read_input();
-	if (line == NULL)
+	if (!line)
 	break;
 
 	trimmed_line = trim_spaces(line);
-	if (trimmed_line == NULL)
-	{
 	free(line);
+	if (!trimmed_line)
 	continue;
-	}
 
 	execute_command(trimmed_line);
-	free(line);
 	}
 
 	return (0);
