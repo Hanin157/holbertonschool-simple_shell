@@ -1,22 +1,23 @@
-/*
- * File: main.c
- * Desc: Simple Shell main loop (0.1 → 0.3)
- */
-
 #include "shell.h"
 #include <unistd.h>
 
 /**
  * main - entry point
  *
+ * @argc: argument count
+ * @argv: argument vector
+ *
  * Return: exit status of last command
  */
-int main(void)
+int main(int argc, char **argv)
 {
 	char *line = NULL;
 	char *trimmed_line = NULL;
 	int interactive = isatty(STDIN_FILENO);
 	int last_status = 0;
+	int cmd_count = 0;
+
+	(void)argc;
 
 	while (1)
 	{
@@ -41,10 +42,16 @@ int main(void)
 			continue;
 		}
 
-		last_status = execute_command(trimmed_line);
+		/* هذا الأمر رقم كم؟ */
+		cmd_count++;
+
+		/* نفّذ الأمر مع تمرير اسم البرنامج ورقم الأمر */
+		last_status = execute_command(trimmed_line, argv[0], cmd_count);
+
 		free(trimmed_line);
 		trimmed_line = NULL;
 	}
 
 	return (last_status);
 }
+

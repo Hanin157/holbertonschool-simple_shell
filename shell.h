@@ -19,8 +19,9 @@ char *trim_spaces_copy(char *str);
 /* PATH helpers */
 int command_exists(char *path);
 char *find_in_path(char *command);
+char *find_command(char *cmd);
 
 /* execution */
-int execute_command(char *line);
+int execute_command(char *line, char *prog_name, int cmd_count);
 
 #endif /* SHELL_H */

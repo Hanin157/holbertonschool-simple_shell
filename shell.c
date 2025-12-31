@@ -1,3 +1,8 @@
+/*
+ * File: shell.c
+ * Desc: Input parsing, PATH handling and command execution
+ */
+
 #include "shell.h"
 
 extern char **environ;
@@ -193,10 +198,12 @@ char *find_command(char *cmd)
 /**
  * execute_command - tokenizes & executes (with PATH support)
  * @line: input line (trimmed)
+ * @prog_name: program name (argv[0], e.g. "./hsh")
+ * @cmd_count: current command number
  *
  * Return: exit status of command, 127 if not found
  */
-int execute_command(char *line)
+int execute_command(char *line, char *prog_name, int cmd_count)
 {
 	pid_t pid;
 	int status = 0;
@@ -226,11 +233,13 @@ int execute_command(char *line)
 	if (cmd_path == NULL)
 	{
 		/* command doesn't exist → DO NOT fork */
-		fprintf(stderr, "./hsh: command not found: %s\n", args[0]);
+		/* شكل الخطأ المطلوب: ./hsh: 1: ls: not found */
+		fprintf(stderr, "%s: %d: %s: not found\n",
+			prog_name, cmd_count, args[0]);
 		return (127);
 	}
 
-	/* if find_command returned a malloc'ed path (from PATH),
+	/* if find_command returned malloc'ed path (from PATH),
 	 * it'll differ from args[0]
 	 */
 	if (cmd_path != args[0])
@@ -239,7 +248,7 @@ int execute_command(char *line)
 	pid = fork();
 	if (pid == -1)
 	{
-		perror("./hsh");
+		perror(prog_name);
 		if (need_free)
 			free(cmd_path);
 		return (1);
@@ -250,7 +259,7 @@ int execute_command(char *line)
 		/* child */
 		if (execve(cmd_path, args, environ) == -1)
 		{
-			perror("./hsh");
+			perror(prog_name);
 			if (need_free)
 				free(cmd_path);
 			_exit(127);
@@ -261,7 +270,7 @@ int execute_command(char *line)
 		/* parent */
 		if (waitpid(pid, &status, 0) == -1)
 		{
-			perror("./hsh");
+			perror(prog_name);
 			status = 1;
 		}
 		else if (WIFEXITED(status))
