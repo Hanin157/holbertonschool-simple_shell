@@ -8,6 +8,12 @@ extern char **environ;
  */
 void execute_command(char *line)
 {
+    if (strcmp(line, "exit") == 0)
+    {
+        free(line);
+        exit(0);
+    }
+
     pid_t child_pid;
     int status;
     char *args[2];
