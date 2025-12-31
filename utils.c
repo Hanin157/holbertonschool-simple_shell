@@ -1,31 +1,26 @@
 #include "shell.h"
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
-/**
-	* trim_whitespace - remove leading and trailing spaces/tabs in-place
-	* @str: string to trim
-	* Return: same pointer, trimmed in-place
-	*/
+/* Trim leading and trailing whitespace */
 char *trim_whitespace(char *str)
 {
-	char *end;
+    char *end;
+    if (!str)
+        return NULL;
 
-	if (!str)
-	return NULL;
+    while (isspace((unsigned char)*str))
+        str++;
 
-	while (isspace((unsigned char)*str))
-	str++;
+    if (*str == '\0')
+        return str;
 
-	if (*str == '\0')
-	return str;
+    end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end))
+        end--;
 
-	end = str + strlen(str) - 1;
-	while (end > str && isspace((unsigned char)*end))
-	end--;
-
-	*(end + 1) = '\0';
-
-	return str;
+    *(end + 1) = '\0';
+    return str;
 }
 
