@@ -1,10 +1,14 @@
 #include "shell.h"
 #include <unistd.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 /**
 	* read_input - reads a line from stdin
 	*
-	* Return: pointer to the input line (must be freed by caller)
+	* Return: pointer to the input line (must be freed by caller), or NULL on EOF
 	*/
 char *read_input(void)
 {
@@ -29,6 +33,35 @@ char *read_input(void)
 	}
 
 	return (line);
+}
+
+/**
+	* trim_spaces - removes leading and trailing spaces from a string
+	* @str: input string
+	*
+	* Return: pointer to trimmed string (modifies original), or NULL if empty
+	*/
+char *trim_spaces(char *str)
+{
+	char *end;
+
+	if (!str)
+	return (NULL);
+
+	/* Trim leading spaces */
+	while (isspace((unsigned char)*str))
+	str++;
+
+	if (*str == 0) /* All spaces? */
+	return (NULL);
+
+	/* Trim trailing spaces */
+	end = str + strlen(str) - 1;
+	while (end > str && isspace((unsigned char)*end))
+	end--;
+
+	*(end + 1) = '\0';
+	return str;
 }
 
 /**
@@ -73,6 +106,7 @@ void execute_command(char *line)
 int main(void)
 {
 	char *line;
+	char *trimmed_line;
 
 	while (1)
 	{
@@ -87,10 +121,16 @@ int main(void)
 	if (line == NULL)
 	break;
 
-	execute_command(line);
+	trimmed_line = trim_spaces(line);
+	if (trimmed_line == NULL)
+	{
+	free(line);
+	continue;
+	}
+
+	execute_command(trimmed_line);
 	free(line);
 	}
 
 	return (0);
 }
-
