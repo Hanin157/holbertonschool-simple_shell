@@ -1,11 +1,12 @@
 #ifndef SHELL_H
 #define SHELL_H
 
-/* Function prototypes */
 char *read_input(void);
 char *trim_spaces(char *str);
 void execute_command(char *line);
-void print_prompt(void);
 
-#endif /* SHELL_H */
+int is_space(char c);
+int command_exists(char *path);
+char *find_command(char *command);
 
+#endif
