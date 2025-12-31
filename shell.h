@@ -11,7 +11,6 @@
 /* Function declarations */
 char *read_line(void);
 char *trim_whitespace(char *str);
-void execute_command(char *line);
 void execute(char *line);
 
 #endif /* SHELL_H */
