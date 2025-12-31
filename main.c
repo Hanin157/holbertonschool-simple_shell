@@ -2,7 +2,7 @@
 
 /**
  * main - simple shell loop
- * Return: 0 on success
+ * Return: 0 on success, 1 on failure
  */
 int main(void)
 {
@@ -14,22 +14,20 @@ int main(void)
             printf("#cisfun$ ");
 
         line = read_line();
-        if (!line)
+        if (!line) /* EOF (Ctrl+D) */
         {
             printf("\n");
             break;
         }
 
         line = trim_whitespace(line);
-
         if (line[0] == '\0')
         {
             free(line);
             continue;
         }
 
-        execute(line);
-
+        execute_command(line);
         free(line);
     }
 

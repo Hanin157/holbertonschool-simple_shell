@@ -2,8 +2,11 @@
 
 extern char **environ;
 
-/* Execute a command given its full path */
-void execute(char *line)
+/**
+ * execute_command - forks and executes a single-word command
+ * @line: command to execute (full path)
+ */
+void execute_command(char *line)
 {
     pid_t child_pid;
     int status;
@@ -19,7 +22,7 @@ void execute(char *line)
         return;
     }
 
-    if (child_pid == 0) /* Child process */
+    if (child_pid == 0) /* Child */
     {
         args[0] = line;
         args[1] = NULL;
@@ -30,7 +33,7 @@ void execute(char *line)
             exit(EXIT_FAILURE);
         }
     }
-    else /* Parent waits */
+    else /* Parent */
         waitpid(child_pid, &status, 0);
 }
 
