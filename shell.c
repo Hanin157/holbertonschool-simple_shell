@@ -86,53 +86,51 @@ char *trim_spaces_copy(char *str)
  */
 int execute_command(char *line)
 {
-	pid_t pid;
-	int status = 0;
-	char *cmd;
-	char *args[2];
+    pid_t pid;
+    int status = 0;
+    char *args[128];
+    char *token;
+    int i = 0;
 
-	if (line == NULL || line[0] == '\0')
-		return (0);
+    if (!line || !line[0])
+        return (0);
 
-	/* Task 2: command lines are made only of one word
-	 * we still tolerate extra spaces but ignore anything beyond first word
-	 */
-	cmd = strtok(line, " \t");
-	if (cmd == NULL)
-		return (0);
+    /* tokenize input into args[] */
+    token = strtok(line, " \t");
+    while (token && i < 127)
+    {
+        args[i++] = token;
+        token = strtok(NULL, " \t");
+    }
+    args[i] = NULL;
 
-	args[0] = cmd;
-	args[1] = NULL;
+    if (!args[0])
+        return (0);
 
-	pid = fork();
-	if (pid == -1)
-	{
-		perror("./hsh");
-		return (1);
-	}
+    pid = fork();
+    if (pid == -1)
+    {
+        perror("./hsh");
+        return (1);
+    }
 
-	if (pid == 0)
-	{
-		/* child process: try to exec exactly what user typed */
-		if (execve(cmd, args, environ) == -1)
-		{
-			/* same style as example: ./shell: No such file or directory */
-			perror("./hsh");
-			_exit(1);
-		}
-	}
-	else
-	{
-		if (waitpid(pid, &status, 0) == -1)
-		{
-			perror("./hsh");
-			return (1);
-		}
-		if (WIFEXITED(status))
-			status = WEXITSTATUS(status);
-		else
-			status = 1;
-	}
+    if (pid == 0)
+    {
+        if (execve(args[0], args, environ) == -1)
+        {
+            perror("./hsh");
+            _exit(127);
+        }
+    }
+    else
+    {
+        waitpid(pid, &status, 0);
 
-	return (status);
+        if (WIFEXITED(status))
+            status = WEXITSTATUS(status);
+        else
+            status = 1;
+    }
+
+    return (status);
 }
