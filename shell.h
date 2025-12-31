@@ -9,10 +9,14 @@
 /* prompt */
 void print_prompt(void);
 
-/* command execution */
+/* input */
+char *read_input(void);
+char *trim_spaces(char *str);
+
+/* execution */
+void execute_command(char *line);
 int command_exists(char *path);
 char *find_command(char *command);
-void execute_command(char *line);
 
-#endif
+#endif /* SHELL_H */
 
