@@ -1,4 +1,5 @@
 #include "shell.h"
+#include <unistd.h>
 
 /**
 	* read_input - reads a line from stdin
@@ -14,7 +15,6 @@ char *read_input(void)
 	nread = getline(&line, &bufsize, stdin);
 	if (nread == -1)
 	{
-	printf("\n");
 	free(line);
 	return (NULL);
 	}
@@ -76,8 +76,12 @@ int main(void)
 
 	while (1)
 	{
+	/* Print prompt only if input is from terminal */
+	if (isatty(STDIN_FILENO))
+	{
 	printf("#cisfun$ ");
 	fflush(stdout);
+	}
 
 	line = read_input();
 	if (line == NULL)
