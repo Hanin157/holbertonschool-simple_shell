@@ -196,7 +196,7 @@ char *find_command(char *cmd)
 }
 
 /**
- * execute_command - tokenizes & executes (with PATH support)
+ * execute_command - tokenizes & executes (with PATH + env builtin)
  * @line: input line (trimmed)
  * @prog_name: program name (argv[0], e.g. "./hsh")
  * @cmd_count: current command number
@@ -227,6 +227,16 @@ int execute_command(char *line, char *prog_name, int cmd_count)
 
 	if (!args[0])
 		return (0);
+
+	/* builtin: env */
+	if (strcmp(args[0], "env") == 0)
+	{
+		int j;
+
+		for (j = 0; environ[j] != NULL; j++)
+			printf("%s\n", environ[j]);
+		return (0);
+	}
 
 	/* resolve command: either absolute/relative or via PATH */
 	cmd_path = find_command(args[0]);
