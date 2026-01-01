@@ -1,3 +1,8 @@
+/*
+ * File: shell.c
+ * Desc: Input parsing, PATH handling and command execution
+ */
+
 #include "shell.h"
 
 extern char **environ;
@@ -196,7 +201,9 @@ char *find_command(char *cmd)
  * @prog_name: program name (argv[0], e.g. "./hsh")
  * @cmd_count: current command number
  *
- * Return: exit status of command, 127 if not found
+ * Return: exit status of command,
+ *         127 if not found,
+ *         -2 if builtin exit was called
  */
 int execute_command(char *line, char *prog_name, int cmd_count)
 {
@@ -226,10 +233,8 @@ int execute_command(char *line, char *prog_name, int cmd_count)
 	/* built-in: exit (no arguments required for this task) */
 	if (strcmp(args[0], "exit") == 0)
 	{
-		/* لو فيه free لازم يكون قبله،
-		 * بس هنا main يمسك الميموري، والخروج ينهي البروسس كامل
-		 */
-		exit(0);
+		/* نرجع كود خاص، و main يتولى الخروج بعد ما يـfree */
+		return (-2);
 	}
 
 	/* resolve command: either absolute/relative or via PATH */
@@ -292,4 +297,3 @@ int execute_command(char *line, char *prog_name, int cmd_count)
 
 	return (status);
 }
-
