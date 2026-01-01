@@ -196,14 +196,12 @@ char *find_command(char *cmd)
 }
 
 /**
- * execute_command - tokenizes & executes (with PATH + builtins)
+ * execute_command - tokenizes & executes (with PATH support)
  * @line: input line (trimmed)
  * @prog_name: program name (argv[0], e.g. "./hsh")
  * @cmd_count: current command number
  *
- * Return: exit status of command,
- *         127 if not found,
- *         -2 if builtin exit was called
+ * Return: exit status of command, 127 if not found
  */
 int execute_command(char *line, char *prog_name, int cmd_count)
 {
@@ -229,13 +227,6 @@ int execute_command(char *line, char *prog_name, int cmd_count)
 
 	if (!args[0])
 		return (0);
-
-	/* built-in: exit (no arguments required for this task) */
-	if (strcmp(args[0], "exit") == 0)
-	{
-		/* نرجع كود خاص، و main يتولى الخروج بعد ما يـfree */
-		return (-2);
-	}
 
 	/* resolve command: either absolute/relative or via PATH */
 	cmd_path = find_command(args[0]);
@@ -297,3 +288,4 @@ int execute_command(char *line, char *prog_name, int cmd_count)
 
 	return (status);
 }
+

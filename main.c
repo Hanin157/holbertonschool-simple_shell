@@ -12,7 +12,7 @@
  * @argc: argument count
  * @argv: argument vector
  *
- * Return: exit status of last command
+ * Return: exit status of last executed command
  */
 int main(int argc, char **argv)
 {
@@ -51,22 +51,24 @@ int main(int argc, char **argv)
 
 		cmd_count++;
 
-		status = execute_command(trimmed_line, argv[0], cmd_count);
-
-		/* -2 معناها builtin exit */
-		if (status == -2)
+		/* builtin: exit (no arguments handled in this task) */
+		if (strcmp(trimmed_line, "exit") == 0)
 		{
+			/* نحرر الميموري ثم نطلع من الشيل
+			 * last_status هنا هو آخر status من آخر أمر
+			 */
 			free(trimmed_line);
 			trimmed_line = NULL;
-			/* ممكن تخلي last_status كما هو أو 0، عادي غالباً */
-			last_status = 0;
 			break;
 		}
 
+		status = execute_command(trimmed_line, argv[0], cmd_count);
 		last_status = status;
+
 		free(trimmed_line);
 		trimmed_line = NULL;
 	}
 
 	return (last_status);
 }
+
