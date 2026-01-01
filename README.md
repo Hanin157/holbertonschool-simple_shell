@@ -126,8 +126,8 @@ holbertonschool-simple_shell
 ----
 ## Authors
 
-Solaf Alessa 
-
+Solaf Abdulaziz  Alessa 
+Hanin Taqi Al Sayed Hassan
 
 
 
